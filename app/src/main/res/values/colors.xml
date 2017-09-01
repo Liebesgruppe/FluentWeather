@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#3AAAAA</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="colorTooBar">#3AAAAA</color>
+    <color name="colorTooBarText">#FFFFFF</color>
+    <color name="colorSecondary">#FFFFFF</color>
+    <color name="colorTextView">#FFFFFF</color>
+    <color name="colorViewOne">#F16B6F</color>
+    <color name="colorViewTwo">#C5C6B6</color>
+    <color name="colorViewThree">#AACD6E</color>
+    <color name="colorViewFour">#3C3530</color>
+</resources>
