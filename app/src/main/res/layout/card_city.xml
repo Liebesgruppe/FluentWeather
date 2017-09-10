@@ -2,27 +2,42 @@
 <android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="100dp"
-    android:padding="10dp">
+    android:padding="10dp"
+    android:layout_marginTop="5dp"
+    android:layout_marginLeft="5dp"
+    android:layout_marginRight="5dp"
+    android:clickable="true"
+    android:foreground="?android:attr/selectableItemBackground"
+>
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:padding="10dp"
+        android:background="@color/cv1">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/tv_item_city"/>
+            android:id="@+id/tv_card_city"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/tv_item_weather"
+            android:id="@+id/tv_card_weather"
             android:layout_alignParentBottom="true"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/tv_card_temp"
+            android:layout_alignParentBottom="true"
+            android:layout_toRightOf="@+id/tv_card_weather"/>
 
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/iv_item_weather"
+            android:id="@+id/iv_card_weather"
             android:layout_alignParentRight="true"/>
     </RelativeLayout>
 

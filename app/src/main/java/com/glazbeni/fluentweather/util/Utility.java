@@ -1,25 +1,23 @@
 package com.glazbeni.fluentweather.util;
 
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 import android.text.TextUtils;
-import android.text.format.DateFormat;
 import android.util.Log;
+import android.widget.EditText;
 
-import com.glazbeni.fluentweather.db.FluentWeatherDB;
-import com.glazbeni.fluentweather.model.Country;
-import com.glazbeni.fluentweather.model.Province;
-import com.glazbeni.fluentweather.model.SevenWeather;
+import com.amap.api.location.AMapLocation;
+import com.amap.api.location.AMapLocationClient;
+import com.amap.api.location.AMapLocationClientOption;
+import com.amap.api.location.AMapLocationListener;
+import com.glazbeni.fluentweather.model.CardWeatherBean;
+import com.glazbeni.fluentweather.model.DailyForecastBean;
+import com.glazbeni.fluentweather.model.WeatherBean;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import static android.content.ContentValues.TAG;
@@ -31,148 +29,121 @@ import static android.content.ContentValues.TAG;
 public class Utility {
 
     /**
-     * 解析和处理服务器返回的省级数据
+     * 进行定位
+     * @param context 上下文
+     * @return String类型的位置
      */
-    public synchronized static boolean handleProvincesResponse(FluentWeatherDB fluentWeatherDB, String response) {
-        if (!TextUtils.isEmpty(response)) {
-            String[] allProvinces = response.split(",");
-            if (allProvinces != null && allProvinces.length > 0) {
-                for (String p : allProvinces) {
-                    String[] array = p.split("\\|");
-                    Province province = new Province();
-                    province.setProvinceCode(array[0]);
-                    province.setProvinceName(array[1]);
-                    //将解析出来的数据存储到Province表中
-                    fluentWeatherDB.saveProvince(province);
+    public static String locate(Context context) {
+        String district = null;
+        AMapLocationClient mLocationClient = new AMapLocationClient(context.getApplicationContext());
+        AMapLocationClientOption mLocationOption = new AMapLocationClientOption();
+        mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
+        mLocationClient.setLocationOption(mLocationOption);
+        mLocationClient.startLocation();
+        mLocationClient.setLocationListener(new AMapLocationListener() {
+            @Override
+            public void onLocationChanged(AMapLocation aMapLocation) {
+                if (aMapLocation != null) {
+                    if (aMapLocation.getErrorCode() == 0) {
+                    } else {
+                        //定位失败时，可通过ErrCode（错误码）信息来确定失败的原因，errInfo是错误信息，详见错误码表。
+                        Log.e("AmapError", "location Error, ErrCode:"
+                                + aMapLocation.getErrorCode() + ", errInfo:"
+                                + aMapLocation.getErrorInfo());
+                    }
                 }
-                return true;
             }
-        }
-        return false;
+        });
+        AMapLocation amLocation = mLocationClient.getLastKnownLocation();
+        district = amLocation.getDistrict();
+        mLocationClient.stopLocation();
+        Log.d(TAG, "locate: 正在定位");
+        return district;
     }
 
     /**
-     * 解析和处理服务器返回的市级数据
+     * 解析服务器返回的JSON数据
+     * @param response 从服务器返回的JSON数据
+     * @return WeatherBean 类型的数据
      */
-//    public synchronized static boolean handleCitiesResponse(FluentWeatherDB fluentWeatherDB, String response, int provinceId) {
-//        if (!TextUtils.isEmpty(response)) {
-//            String[] allCities = response.split(",");
-//            if (allCities != null && allCities.length > 0 ) {
-//                for (String c : allCities) {
-//                    String[] array = c.split("\\|");
-//                    CityX cityH = new CityX();
-//                    cityH.setCityName(array[1]);
-//                    cityH.setCityCode(array[0]);
-//                    cityH.setProvinceId(provinceId);
-//                    //将解析出来的数据存储到City表
-//                    fluentWeatherDB.saveCity(cityH);
-//                }
-//                return true;
-//            }
-//        }
-//        return false;
-//    }
-
-    /**
-     * 解析和处理服务器返回的县级数据
-     */
-    public synchronized static boolean handleCountriesResponse(FluentWeatherDB fluentWeatherDB, String response, int cityId) {
-        if (!TextUtils.isEmpty(response)) {
-            String[] allCountries = response.split(",");
-            if (allCountries != null && allCountries.length > 0) {
-                for (String c : allCountries) {
-                    String[] array = c.split("\\|");
-                    Country country = new Country();
-                    country.setCountryCode(array[0]);
-                    country.setCountryName(array[1]);
-                    country.setCityId(cityId);
-                    //将解析出来的数据存储到Country表
-                    fluentWeatherDB.saveCountry(country);
-                }
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * 解析服务器返回的JSON数据，并将解析出的数据存储到本地
-     */
-    public static void handleWeatherResponse(Context context, String respone) {
-        if (respone != null) {
+    public static WeatherBean handleWeatherResponse(String response) {
+        WeatherBean bean = new WeatherBean();
+        if (response != null) {
             try {
-                JSONObject obj = new JSONObject(respone);
+                JSONObject obj = new JSONObject(response);
                 JSONArray jsonArray = obj.getJSONArray("HeWeather5");
                 JSONObject object = (JSONObject) jsonArray.get(0);
-
-                JSONObject aqi = object.getJSONObject("aqi");
-                JSONObject aqiCity = aqi.getJSONObject("city");
-                String pm25 = aqiCity.getString("pm25");
-                String qlty = aqiCity.getString("qlty");
-
-                JSONObject basic = object.getJSONObject("basic");
-                JSONObject update = basic.getJSONObject("update");
-                String city = basic.getString("city");
-                String id = basic.getString("id");
-                String utc = update.getString("utc");
-
-                JSONObject now = object.getJSONObject("now");
-                JSONObject condNow = now.getJSONObject("cond");
-                String txt = condNow.getString("txt");
-                String temp = now.getString("tmp");
+                JSONObject suggestion = object.getJSONObject("suggestion");
+                bean.setPm25(object.getJSONObject("aqi").getJSONObject("city").getString("pm25"));
+                bean.setQlty(object.getJSONObject("aqi").getJSONObject("city").getString("qlty"));
+                bean.setCity(object.getJSONObject("basic").getString("city"));
+                bean.setId(object.getJSONObject("basic").getString("id"));
+                bean.setUpdateTime(object.getJSONObject("basic").getJSONObject("update").getString("loc"));
+                bean.setTxt(object.getJSONObject("now").getJSONObject("cond").getString("txt"));
+                bean.setWeatherCode(object.getJSONObject("now").getJSONObject("cond").getString("code"));
+                bean.setTemp(object.getJSONObject("now").getString("tmp"));
+                bean.setAirBrf(suggestion.getJSONObject("air").getString("brf"));
+                bean.setAirTxt(suggestion.getJSONObject("air").getString("txt"));
+                bean.setCofmBrf(suggestion.getJSONObject("comf").getString("brf"));
+                bean.setCofmTxt(suggestion.getJSONObject("comf").getString("txt"));
+                bean.setCwBrf(suggestion.getJSONObject("cw").getString("brf"));
+                bean.setCwTxt(suggestion.getJSONObject("cw").getString("txt"));
+                bean.setDrsgBrf(suggestion.getJSONObject("drsg").getString("brf"));
+                bean.setDrsgTxt(suggestion.getJSONObject("drsg").getString("txt"));
+                bean.setFluBrf(suggestion.getJSONObject("flu").getString("brf"));
+                bean.setFluTxt(suggestion.getJSONObject("flu").getString("txt"));
+                bean.setSportBrf(suggestion.getJSONObject("sport").getString("brf"));
+                bean.setSportTxt(suggestion.getJSONObject("sport").getString("txt"));
+                bean.setTravBrf(suggestion.getJSONObject("trav").getString("brf"));
+                bean.setTravTxt(suggestion.getJSONObject("trav").getString("txt"));
+                bean.setUvBrf(suggestion.getJSONObject("uv").getString("brf"));
+                bean.setUvTxt(suggestion.getJSONObject("uv").getString("txt"));
 
                 JSONArray daily = object.getJSONArray("daily_forecast");
-                List<SevenWeather> sevenWeatherlist = new ArrayList<SevenWeather>();
-                Date df = new Date();
-                SimpleDateFormat sf = new SimpleDateFormat("yyyy:MM:dd");
-                SimpleDateFormat ss = new SimpleDateFormat("M/dd");
-                String M = null;
-                String dd = null;
-                String date = null;
+                List<DailyForecastBean> dailyForecastBeanList = new ArrayList<DailyForecastBean>();
                 for (int i = 0; i < daily.length(); i++) {
-                    SevenWeather sevenWeather = new SevenWeather();
+                    DailyForecastBean dailyForecastBean = new DailyForecastBean();
                     JSONObject tmpObj = (JSONObject) daily.get(i);
-                    JSONObject tmp = tmpObj.getJSONObject("tmp");
-                    JSONObject cond = tmpObj.getJSONObject("cond");
-                    M = tmpObj.getString("date").substring(6, 7);
-                    dd = tmpObj.getString("date").substring(8);
-                    date = M + "/" + dd;
-                    sevenWeather.setMax(tmp.getString("max") + "°");
-                    sevenWeather.setMin(tmp.getString("min") + "°");
-                    sevenWeather.setDate(date);
-                    sevenWeather.setWeather(cond.getString("txt_d"));
-                    sevenWeatherlist.add(sevenWeather);
+                    dailyForecastBean.setDailyDate(tmpObj.getString("date"));
+                    dailyForecastBean.setDailyTmpMax(tmpObj.getJSONObject("tmp").getString("max"));
+                    dailyForecastBean.setDailyTmpMin(tmpObj.getJSONObject("tmp").getString("min"));
+                    dailyForecastBean.setDailyWeatherCode(tmpObj.getJSONObject("cond").getString("code_d"));
+                    dailyForecastBeanList.add(dailyForecastBean);
                 }
-                saveWeatherInfo(context, city, id, utc, pm25, qlty, txt, temp, sevenWeatherlist);
+                bean.setWeatherBeanList(dailyForecastBeanList);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
         } else {
             Log.d(TAG, "handleWeatherResponse: JSON数据为空");
         }
+        return bean;
     }
 
-    public static void saveWeatherInfo(Context context, String city,
-                                       String id, String utc,
-                                       String pm25, String qlty,
-                                       String txt, String temp,
-                                       List<SevenWeather> sevenWeathers) {
-        SharedPreferences.Editor edtior = PreferenceManager.getDefaultSharedPreferences(context).edit();
-        int size = sevenWeathers.size();
-        edtior.putString("city", city);
-        edtior.putString("id", id);
-        edtior.putString("utc", utc);
-        edtior.putString("pm25", pm25);
-        edtior.putString("qlty", qlty);
-        edtior.putString("txt", txt);
-        edtior.putString("temp", temp);
-        edtior.putInt("size", size);
-        for (int i = 0; i < size; i++) {
-            edtior.putString("max" + i, sevenWeathers.get(i).getMax());
-            edtior.putString("min" + i, sevenWeathers.get(i).getMin());
-            edtior.putString("date" + i, sevenWeathers.get(i).getDate());
-            edtior.putString("weather" + i, sevenWeathers.get(i).getWeather());
+    /**
+     * 解析服务器返回的JSON数据中的一部分用于在“已添加的城市列表”中填充数据
+     * @param response 服务器返回的JSON数据
+     * @return CardWeatherBean 类型的数据
+     */
+    public static CardWeatherBean handleCardWeatherResponse(String response) {
+        CardWeatherBean cardBean = null;
+        if (response != null) {
+            try {
+                JSONObject obj = new JSONObject(response);
+                JSONArray array = obj.getJSONArray("HeWeather5");
+                JSONObject object = (JSONObject) array.get(0);
+                String status = object.getString("status");
+                if (status.equals("ok")) {
+                    cardBean = new CardWeatherBean();
+                    cardBean.setCardNowWeather(object.getJSONObject("now").getJSONObject("cond").getString("txt"));
+                    cardBean.setCardNowWeatherCode(object.getJSONObject("now").getJSONObject("cond").getString("code"));
+                    cardBean.setCardNowTemp(object.getJSONObject("now").getString("tmp"));
+                    cardBean.setCardCity(object.getJSONObject("basic").getString("city"));
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
-        edtior.commit();
+        return cardBean;
     }
 }

@@ -2,7 +2,7 @@
 <resources>
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#3AAAAA</color>
-    <color name="colorAccent">#FF4081</color>
+    <color name="colorAccent">#ff4081</color>
     <color name="colorTooBar">#3AAAAA</color>
     <color name="colorTooBarText">#FFFFFF</color>
     <color name="colorSecondary">#FFFFFF</color>
@@ -11,4 +11,25 @@
     <color name="colorViewTwo">#C5C6B6</color>
     <color name="colorViewThree">#AACD6E</color>
     <color name="colorViewFour">#3C3530</color>
+
+    <color name="colorCardA1">#FFBC42</color>
+    <color name="colorCardA2">#D81159</color>
+    <color name="colorCardA3">#8F2D56</color>
+    <color name="colorCardA4">#218380</color>
+
+    <color name="colorCardB1">#ff7473</color>
+    <color name="colorCardB2">#ffc952</color>
+    <color name="colorCardB3">#47b8e0</color>
+    <color name="colorCardB4">#34314c</color>
+
+    <color name="colorBgTv">#0034314c</color>
+
+    <color name="colorBg">#FF263238</color>
+    <color name="colorBg2">#0034314c</color>
+
+
+    <color name="cv1">#c6e5d9</color>
+    <color name="cv2">#c6a49a</color>
+    <color name="cv3">#d68189</color>
+    <color name="cv4">#e94e77</color>
 </resources>
