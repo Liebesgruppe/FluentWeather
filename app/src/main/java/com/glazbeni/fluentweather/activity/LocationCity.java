@@ -14,6 +14,7 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -51,7 +52,6 @@ public class LocationCity extends AppCompatActivity implements TextView.OnEditor
     private ImageView ivClear; //用于清空搜索栏中的内容
     public static List<String> cityNameList;
     private List<CardWeatherBean> cardBeanList;
-    public static final int BEAN_IS_NULL = 104;
     public static final int NO_CONNECTION = 105;
 
     private Handler handler = new Handler() {
@@ -60,9 +60,6 @@ public class LocationCity extends AppCompatActivity implements TextView.OnEditor
             switch (msg.what) {
                 case GET_WEATHER_BEAN:
                     cardAdapter.notifyDataSetChanged();
-                    break;
-                case BEAN_IS_NULL:
-                    Toast.makeText(LocationCity.this, "未找到该城市，请确保输入正确_(:з)∠)_", Toast.LENGTH_SHORT).show();
                     break;
                 case NO_CONNECTION:
                     Toast.makeText(LocationCity.this, "数据获取失败", Toast.LENGTH_SHORT).show();
@@ -96,7 +93,7 @@ public class LocationCity extends AppCompatActivity implements TextView.OnEditor
         toolbar.setNavigationIcon(R.mipmap.ic_arrow_back_white_24dp);
         etSearch = (EditText) findViewById(R.id.et_search);
         ivClear = (ImageView) findViewById(R.id.iv_clear);
-        cardBeanList = new ArrayList<CardWeatherBean>();
+        cardBeanList = new ArrayList<>();
         cardAdapter = new MyCardAdapter(this, cardBeanList);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(cardAdapter);
@@ -124,7 +121,7 @@ public class LocationCity extends AppCompatActivity implements TextView.OnEditor
     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
         String etCity = etSearch.getText().toString();
         if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-            if (etCity != null) {
+            if (!TextUtils.isEmpty(etCity)) {
                 if (cityNameList.contains(etCity)) {
                     Toast.makeText(this, "城市已存在啦(●ˇ∀ˇ●)", Toast.LENGTH_SHORT).show();
                 } else {
@@ -167,12 +164,16 @@ public class LocationCity extends AppCompatActivity implements TextView.OnEditor
             CardWeatherBean cardWeatherBean = null;
 
             @Override
-            public void onFinish(String respone) {
-                cardWeatherBean = Utility.handleCardWeatherResponse(respone);
-                cardBeanList.add(cardWeatherBean);
-                Message msg = new Message();
-                msg.what = GET_WEATHER_BEAN;
-                handler.sendEmptyMessage(msg.what);
+            public void onFinish(String response) {
+                cardWeatherBean = Utility.handleCardWeatherResponse(response);
+                if (cardWeatherBean != null) {
+                    cardBeanList.add(cardWeatherBean);
+                    Message msg = new Message();
+                    msg.what = GET_WEATHER_BEAN;
+                    handler.sendEmptyMessage(msg.what);
+                } else {
+                    Toast.makeText(LocationCity.this, "未找到该城市，请确保输入正确_(:з)∠)_", Toast.LENGTH_SHORT).show();
+                }
             }
 
             @Override
@@ -197,7 +198,7 @@ public class LocationCity extends AppCompatActivity implements TextView.OnEditor
         for (int i = 0; i < cityListSize; i++) {
             editor.putString("city_name" + i, cityNameList.get(i));
         }
-        editor.commit();
+        editor.apply();
     }
 
     private void readPreferences() {
@@ -207,7 +208,6 @@ public class LocationCity extends AppCompatActivity implements TextView.OnEditor
         if (preferencesSize > 0) {
             for (int i = 0; i < preferencesSize; i++) {
                 getJSONCard(preferences.getString("city_name" + i, ""));
-                Log.d("23333", "readPreferences: " + preferences.getString("city_name" + i, ""));
                 cityNameList.add(preferences.getString("city_name" + i, ""));
             }
         }
